@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# environments
+env/
+venv/
+.env
+
+# database
+*.db
+*.sqlite3
+
+# generated assets
+generated/*
+!generated/.gitkeep
+
+# testing and caches
+.pytest_cache/
+tests/__pycache__/
+debug_test.txt
+pytest_report.txt
+pytest_final.txt
+pytest_final2.txt
