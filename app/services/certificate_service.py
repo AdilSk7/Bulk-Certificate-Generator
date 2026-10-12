@@ -16,6 +16,8 @@ def get_safe_filename(name: str) -> str:
     safe_name = re.sub(r'_+', '_', safe_name)
     return f"{safe_name.strip('_')}"
 
+import textwrap
+
 def generate_certificate(
     recipient_name: str,
     event_name: str,
@@ -23,7 +25,11 @@ def generate_certificate(
     issuer_name: str,
     output_dir: str,
     unique_id: Union[int, str],
-    filename_override: Optional[str] = None
+    filename_override: Optional[str] = None,
+    certificate_title: str = "CERTIFICATE OF PARTICIPATION",
+    introduction_text: str = "This certificate is proudly presented to",
+    description_text: str = "for successfully participating in",
+    presented_by_label: str = "Presented by"
 ) -> str:
     """
     Generates a PDF certificate and returns the absolute file path.
@@ -61,22 +67,43 @@ def generate_certificate(
         c.setLineWidth(1)
         c.rect(0.6 * inch, 0.6 * inch, width - 1.2 * inch, height - 1.2 * inch, stroke=1, fill=0)
         
-        # Title
-        c.setFont("Helvetica-Bold", 40)
-        c.drawCentredString(width / 2.0, height - 2.5 * inch, "CERTIFICATE OF PARTICIPATION")
+        # Title (with safe font auto-scaling if title is long)
+        title_font_size = 40
+        title_max_w = width - 2 * inch
+        while title_font_size > 22 and c.stringWidth(certificate_title, "Helvetica-Bold", title_font_size) > title_max_w:
+            title_font_size -= 2
+        c.setFont("Helvetica-Bold", title_font_size)
+        c.drawCentredString(width / 2.0, height - 2.5 * inch, certificate_title)
         
-        # Subtitle
-        c.setFont("Helvetica", 18)
-        c.drawCentredString(width / 2.0, height - 3.5 * inch, "This certificate is proudly presented to")
+        # Introduction / Subtitle
+        intro_font_size = 18
+        intro_max_w = width - 2 * inch
+        while intro_font_size > 14 and c.stringWidth(introduction_text, "Helvetica", intro_font_size) > intro_max_w:
+            intro_font_size -= 1
+        c.setFont("Helvetica", intro_font_size)
+        c.drawCentredString(width / 2.0, height - 3.5 * inch, introduction_text)
         
         # Recipient Name
         c.setFont("Helvetica-Bold", 30)
         c.setFillColorRGB(0.1, 0.1, 0.5)
         c.drawCentredString(width / 2.0, height - 4.5 * inch, recipient_name)
         
+        # Description text (with multiline text wrapping if text is long)
         c.setFillColorRGB(0, 0, 0)
-        c.setFont("Helvetica", 16)
-        c.drawCentredString(width / 2.0, height - 5.3 * inch, "for successfully participating in")
+        desc_font_size = 16
+        c.setFont("Helvetica", desc_font_size)
+        desc_max_w = width - 2.5 * inch
+        if c.stringWidth(description_text, "Helvetica", desc_font_size) > desc_max_w:
+            avg_char_w = max(c.stringWidth("participating in", "Helvetica", desc_font_size) / 16, 7)
+            approx_chars = max(int(desc_max_w / avg_char_w), 25)
+            lines = textwrap.wrap(description_text, width=approx_chars)
+            total_h = (len(lines) - 1) * (desc_font_size * 1.2)
+            curr_y = height - 5.3 * inch + (total_h / 2.0)
+            for line in lines:
+                c.drawCentredString(width / 2.0, curr_y, line)
+                curr_y -= desc_font_size * 1.2
+        else:
+            c.drawCentredString(width / 2.0, height - 5.3 * inch, description_text)
         
         # Event Name
         c.setFont("Helvetica-Bold", 20)
@@ -86,9 +113,9 @@ def generate_certificate(
         c.setFont("Helvetica", 14)
         c.drawCentredString(width / 2.0, height - 6.5 * inch, f"held on {event_date}")
         
-        # Issuer
+        # Issuer & Presented By Label
         c.setFont("Helvetica-Oblique", 14)
-        c.drawCentredString(width / 2.0, 1.5 * inch, "Presented by")
+        c.drawCentredString(width / 2.0, 1.5 * inch, presented_by_label)
         c.setFont("Helvetica-Bold", 16)
         c.drawCentredString(width / 2.0, 1.1 * inch, issuer_name)
         

@@ -35,7 +35,11 @@ def process_generation_job(job_id: int):
                     issuer_name=job.issuer_name,
                     output_dir=OUTPUT_BASE_DIR,
                     unique_id=cert.id,
-                    filename_override=f"{cert.certificate_id}.pdf"
+                    filename_override=f"{cert.certificate_id}.pdf",
+                    certificate_title=job.certificate_title or "CERTIFICATE OF PARTICIPATION",
+                    introduction_text=job.introduction_text or "This certificate is proudly presented to",
+                    description_text=job.description_text or "for successfully participating in",
+                    presented_by_label=job.presented_by_label or "Presented by"
                 )
                 cert.status = "GENERATED"
                 cert.file_path = file_path

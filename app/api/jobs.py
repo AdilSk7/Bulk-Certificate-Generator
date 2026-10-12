@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, status, BackgroundTasks, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -6,6 +7,15 @@ from ..database import get_db
 from ..services.generation_job_service import process_generation_job, generate_zip_for_job
 
 router = APIRouter()
+
+def sanitize_filename(value: str) -> str:
+    if not value:
+        return ""
+    value = value.strip()
+    value = re.sub(r'[\\/:*?"<>|]', '_', value)
+    value = re.sub(r'\s+', '_', value)
+    value = re.sub(r'_+', '_', value)
+    return value.strip('._ ')
 
 @router.post("", response_model=schemas.JobResponse, status_code=status.HTTP_201_CREATED)
 def create_job(job_in: schemas.JobCreateRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -56,8 +66,14 @@ def download_certificates(job_id: int, db: Session = Depends(get_db)):
     if not zip_buffer:
         raise HTTPException(status_code=404, detail="No generated certificates found for this job")
         
+    safe_event_name = sanitize_filename(job.event_name or "")
+    filename = (
+        f"{safe_event_name}_certificates.zip"
+        if safe_event_name
+        else "certificates.zip"
+    )
     headers = {
-        "Content-Disposition": f"attachment; filename=job_{job_id}_certificates.zip"
+        "Content-Disposition": f'attachment; filename="{filename}"'
     }
     return StreamingResponse(
         zip_buffer,

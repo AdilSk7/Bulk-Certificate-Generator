@@ -11,6 +11,10 @@ def create_generation_job(db: Session, job_in: schemas.JobCreateRequest) -> mode
         event_name=job_in.event_name,
         event_date=job_in.event_date,
         issuer_name=job_in.issuer_name,
+        certificate_title=job_in.certificate_title,
+        introduction_text=job_in.introduction_text,
+        description_text=job_in.description_text,
+        presented_by_label=job_in.presented_by_label,
         total_count=len(job_in.recipients),
         success_count=0,
         failed_count=0

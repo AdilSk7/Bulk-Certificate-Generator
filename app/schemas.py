@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, date
 from typing import Optional, List
 
@@ -32,6 +32,10 @@ class GenerationJob(GenerationJobBase):
     event_name: str
     event_date: date
     issuer_name: str
+    certificate_title: Optional[str] = "CERTIFICATE OF PARTICIPATION"
+    introduction_text: Optional[str] = "This certificate is proudly presented to"
+    description_text: Optional[str] = "for successfully participating in"
+    presented_by_label: Optional[str] = "Presented by"
     total_count: int
     success_count: int
     failed_count: int
@@ -43,14 +47,32 @@ class GenerationJob(GenerationJobBase):
         from_attributes = True
 
 class Recipient(BaseModel):
-    name: str = Field(..., min_length=1, strip_whitespace=True)
+    name: str = Field(..., min_length=1)
     email: str = Field(..., pattern=r"^[\w\.-]+@[\w\.-]+\.\w+$")
 
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Name cannot be empty or blank")
+        return v.strip()
+
 class JobCreateRequest(BaseModel):
-    event_name: str = Field(..., min_length=1, strip_whitespace=True)
+    event_name: str = Field(..., min_length=1)
     event_date: date
-    issuer_name: str = Field(..., min_length=1, strip_whitespace=True)
+    issuer_name: str = Field(..., min_length=1)
+    certificate_title: str = Field(default="CERTIFICATE OF PARTICIPATION", min_length=1)
+    introduction_text: str = Field(default="This certificate is proudly presented to", min_length=1)
+    description_text: str = Field(default="for successfully participating in", min_length=1)
+    presented_by_label: str = Field(default="Presented by", min_length=1)
     recipients: List[Recipient] = Field(..., min_length=1)
+
+    @field_validator("event_name", "issuer_name", "certificate_title", "introduction_text", "description_text", "presented_by_label")
+    @classmethod
+    def validate_non_empty_strings(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Field cannot be empty or blank")
+        return v.strip()
 
 class CertificateResponse(BaseModel):
     id: int
